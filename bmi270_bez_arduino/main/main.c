@@ -465,8 +465,8 @@ const uint8_t bmi270_config_file[] = {
 };
 
 
-// Function to write to BMI280 register
-esp_err_t bmi280_write_register(uint8_t reg, uint8_t value) {
+// Wpisywanie bajtu do rejestru
+esp_err_t bmi270_write_register(uint8_t reg, uint8_t value) {
     uint8_t tx_buffer[2];  // Dane do wysłania: 7-bitowy adres + dummy
     tx_buffer[0] = reg & 0x7F;  // 7-bitowy adres z ustawionym MSB
     tx_buffer[1] = value;         // dane
@@ -485,7 +485,8 @@ esp_err_t bmi280_write_register(uint8_t reg, uint8_t value) {
     return ret;
 }
 
-esp_err_t bmi280_write_register_many_bytes(uint8_t reg, uint8_t* data, size_t length) {
+//Wpisywanie wiele bajtow do rejestru (i kolejnych)
+esp_err_t bmi270_write_register_many_bytes(uint8_t reg, uint8_t* data, size_t length) {
     uint8_t *tx_buffer = (uint8_t *)malloc(length + 1);
     uint8_t *rx_buffer = (uint8_t *) malloc(length + 1);
 
@@ -522,7 +523,7 @@ esp_err_t bmi280_write_register_many_bytes(uint8_t reg, uint8_t* data, size_t le
 
 
 
-esp_err_t bmi280_read_register(uint8_t reg, uint8_t *data) {
+esp_err_t bmi270_read_register(uint8_t reg, uint8_t *data) {
 
     uint8_t tx_buffer[3];  // Dane do wysłania: 7-bitowy adres + dummy
     tx_buffer[0] = reg | 0x80;  // 7-bitowy adres z ustawionym MSB
@@ -545,7 +546,7 @@ esp_err_t bmi280_read_register(uint8_t reg, uint8_t *data) {
     return ret;
 }
 
-esp_err_t bmi280_read_register_many_bytes(uint8_t reg, uint8_t* data, size_t length) {
+esp_err_t bmi270_read_register_many_bytes(uint8_t reg, uint8_t* data, size_t length) {
     
     uint8_t tx_buffer[length + 2];
     uint8_t rx_buffer[length + 2];
@@ -580,7 +581,7 @@ esp_err_t bmi270_write_config_file(uint8_t reg, const uint8_t *array, size_t siz
     esp_err_t ret;
 
     for (size_t i = 0; i < size; i++) {
-        ret = bmi280_write_register(reg, array[i]);
+        ret = bmi270_write_register(reg, array[i]);
         if (ret != ESP_OK) {
             printf("Error writing to register at index %zu: %s\n", i, esp_err_to_name(ret));
             return ret; 
@@ -617,17 +618,17 @@ void init_spi() {
     
 }
 
-esp_err_t bmi280_init(const uint8_t *config, size_t length) {
+esp_err_t bmi270_init(const uint8_t *config, size_t length) {
     
     ESP_LOGI(TAG, "Inicjalizacja bmi270");
 
     // Wyłącz zaawansowane oszczędzanie energii
-    bmi280_write_register(PWR_CONF_REG, 0x00);
+    bmi270_write_register(PWR_CONF_REG, 0x00);
 
     esp_rom_delay_us(450);
 
     // Przygotowanie ładowania konfiguracji
-    bmi280_write_register(INIT_CTRL_REG, 0x00);
+    bmi270_write_register(INIT_CTRL_REG, 0x00);
 
     ESP_LOGI(TAG, "Wczytywanie pliku konfiguracyjnego");
 
@@ -636,13 +637,13 @@ esp_err_t bmi280_init(const uint8_t *config, size_t length) {
     ESP_LOGI(TAG, "Plik konfiguracyjny wczytano");
 
     // Zakończenie ładowania konfiguracji
-    bmi280_write_register(INIT_CTRL_REG, 0x01);
+    bmi270_write_register(INIT_CTRL_REG, 0x01);
 
     vTaskDelay(pdTICKS_TO_MS(160));
 
     // Sprawdzenie statusu wewnętrznego
     uint8_t internal_status = 0;
-    bmi280_read_register(INTERNAL_STATUS_REG, &internal_status);
+    bmi270_read_register(INTERNAL_STATUS_REG, &internal_status);
     ESP_LOGI(TAG, "Internal status po konfiguracji 0x%02X", internal_status);
 
     ESP_LOGI(TAG, "Configuration loaded successfully!");
@@ -651,47 +652,47 @@ esp_err_t bmi280_init(const uint8_t *config, size_t length) {
 }
 
 
-esp_err_t bmi280_config() {
+esp_err_t bmi270_config() {
 
     
 
     //Power control -- wlacz odczytywanie przyspieszen, predkosci katowych i temperatury
-    bmi280_write_register(PWR_CTRL_REG, 0x0E);
+    bmi270_write_register(PWR_CTRL_REG, 0x0E);
 
     //Acceleration Conf -- konfiguracja akcelerometru dla normal power mode, odczyt danych z czestotliwoscia 100 Hz, 
     //wysokie filtrowanie danych
-    bmi280_write_register(ACC_CONF_REG, 0xA8);
+    bmi270_write_register(ACC_CONF_REG, 0xA8);
 
     //Acc Range -- Zakres przyspieszen g-range +- 8g
-    bmi280_write_register(ACC_RANGE_REG, 0x02);
+    bmi270_write_register(ACC_RANGE_REG, 0x02);
 
     //Gyroscope Conf -- konfiguracja zyroskopu dla normal power mode / patrz Acceleration Conf
-    bmi280_write_register(GYR_CONF_REG, 0xA9);
+    bmi270_write_register(GYR_CONF_REG, 0xA9);
 
     //Gyroscope Range -- Zakres predkosci katowych +- 2000 dps
-    bmi280_write_register(GYR_RANGE_REG, 0x00);
+    bmi270_write_register(GYR_RANGE_REG, 0x00);
 
     //Wylacz oszczedzanie energii
-    bmi280_write_register(PWR_CONF_REG, 0x02);
+    bmi270_write_register(PWR_CONF_REG, 0x02);
 
 
     uint8_t chip_id;
 
     // Read chip ID
-    if (bmi280_read_register(0x00, &chip_id) != ESP_OK || chip_id != 0x24) {
-        ESP_LOGE(TAG, "BMI280 not detected! Chip ID: 0x%02X", chip_id);
+    if (bmi270_read_register(0x00, &chip_id) != ESP_OK || chip_id != 0x24) {
+        ESP_LOGE(TAG, "BMI270 nie wykryty! Chip ID: 0x%02X", chip_id);
         return ESP_FAIL;
     }
-    ESP_LOGI(TAG, "BMI280 detected. Chip ID: 0x%02X", chip_id);
+    ESP_LOGI(TAG, "BMI270 wykryty. Chip ID: 0x%02X", chip_id);
 
 
     return ESP_OK;
 }
 
-esp_err_t bmi280_read_data()
+esp_err_t bmi270_read_data()
 {
     uint8_t raw_data[12];
-    esp_err_t ret = bmi280_read_register_many_bytes(0x0C, raw_data, 12);
+    esp_err_t ret = bmi270_read_register_many_bytes(0x0C, raw_data, 12);
 
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to read acceleration data");
@@ -730,26 +731,26 @@ void app_main() {
     
     init_spi();
 
-    if (bmi280_init(bmi270_config_file, sizeof(bmi270_config_file)) != ESP_OK) {
-        ESP_LOGE(TAG, "BMI280 initialization failed!");
+    if (bmi270_init(bmi270_config_file, sizeof(bmi270_config_file)) != ESP_OK) {
+        ESP_LOGE(TAG, "Fail inicjalizacji BMI270");
         return;
     }
-    ESP_LOGI(TAG, "BMI280 initialization successful");
+    ESP_LOGI(TAG, "Inicjalizacja BMI270 przebiegla pomyslnie");
 
-    if (bmi280_config() != ESP_OK) {
-        ESP_LOGE(TAG, "BMI280 configuration failed!");
+    if (bmi270_config() != ESP_OK) {
+        ESP_LOGE(TAG, "Fail konfiguracji BMI270!");
         return;
     }
-    ESP_LOGI(TAG, "BMI280 configuration successful!");
+    ESP_LOGI(TAG, "Konfiguracja BMI270 przebiegla pomyslnie!");
 
 
     int16_t acc_x, acc_y, acc_z;
 
     while (1) {
-        if (bmi280_read_data(&acc_x, &acc_y, &acc_z) != ESP_OK) {
+        if (bmi270_read_data(&acc_x, &acc_y, &acc_z) != ESP_OK) {
             ESP_LOGE(TAG, "Blad przy odczycie przyspieszenia");
         }
-        vTaskDelay(pdMS_TO_TICKS(500)); // Odświeżanie co 500 ms
+        vTaskDelay(pdMS_TO_TICKS(200)); // Odświeżanie co 500 ms
     }
 
 }
