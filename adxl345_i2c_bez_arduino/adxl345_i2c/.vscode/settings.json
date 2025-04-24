@@ -1,0 +1,9 @@
+{
+    "C_Cpp.intelliSenseEngine": "default",
+    "idf.espIdfPathWin": "C:\\Users\\PATRYK\\esp\\v5.3.2\\esp-idf",
+    "idf.pythonInstallPath": "C:\\Users\\PATRYK\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
+    "idf.openOcdConfigs": [
+        "board/esp32s3-builtin.cfg"
+    ],
+    "idf.toolsPathWin": "C:\\Users\\PATRYK\\.espressif"
+}
